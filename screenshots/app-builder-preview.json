@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "BlackBriefCEO",
+      "hasCanvas": false,
+      "bodyTextLen": 470,
+      "bodyTextHash": "040e7910eead00d01d064296c92e8965ca51eca38ae492040348ddd993cab5b3",
+      "bodyTextPrefix": "BlackBrief CEO USO INTERNO · CADA MAÑANA Internet está lleno de ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "BlackBriefCEO",
+      "hasCanvas": false,
+      "bodyTextLen": 470,
+      "bodyTextHash": "040e7910eead00d01d064296c92e8965ca51eca38ae492040348ddd993cab5b3",
+      "bodyTextPrefix": "BlackBrief CEO USO INTERNO · CADA MAÑANA Internet está lleno de ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
