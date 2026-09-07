@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "version": "1.0.0",
+  "productName": "BRIEF AI",
   "main": "electron/main.cjs",
   "overrides": {
     "nf3": "0.3.17"
@@ -22,8 +23,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "electron": "electron .",
-    "dist:win": "npm run build && electron-builder --win --x64",
-    "dist:dir": "npm run build && electron-builder --dir"
+    "dist:win": "npm run build && electron-builder --win --x64 --publish never",
+    "dist:dir": "npm run build && electron-builder --dir",
+    "dist:win:dir": "npm run build && electron-builder --win --x64 --dir --publish never"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",
@@ -102,28 +104,51 @@
     "vite": "^8.2.0"
   },
   "build": {
-    "appId": "com.blackbrief.ceo",
-    "productName": "BlackBriefCEO",
+    "appId": "com.briefai.desktop",
+    "productName": "BRIEF AI",
+    "copyright": "Copyright BRIEF AI",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "electron"
     },
     "files": [
-      "dist/**/*",
-      ".output/**/*",
-      "electron/**/*",
       "package.json",
-      "node_modules/**/*",
+      "electron/**/*",
+      ".output/**/*",
+      "dist/**/*",
+      "public/**/*",
       "migrations/**/*",
-      "public/**/*"
+      "node_modules/**/*",
+      "!node_modules/.cache/**/*",
+      "!**/*.{md,ts,map}",
+      "!**/test/**/*"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.cjs"
+    },
+    "asar": true,
+    "asarUnpack": [
+      ".output/**/*",
+      "migrations/**/*"
     ],
     "win": {
-      "target": ["nsis"],
-      "artifactName": "BlackBriefCEO-Setup-${version}.${ext}"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "BRIEF-AI-Setup-${version}.${ext}",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BRIEF AI",
+      "uninstallDisplayName": "BRIEF AI"
     }
   }
 }
