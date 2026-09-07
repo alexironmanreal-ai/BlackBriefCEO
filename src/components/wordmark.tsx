@@ -14,7 +14,7 @@ export function Wordmark({
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <img
-        src="/brand/icon-180.png"
+        src="/favicon.svg"
         alt="BRIEF AI"
         width={iconPx}
         height={iconPx}
