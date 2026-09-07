@@ -18,6 +18,16 @@ function severityVariant(severity: Severity) {
   return severity;
 }
 
+function countBySeverity(briefing: Briefing) {
+  return briefing.items.reduce(
+    (acc, item) => {
+      acc[item.severity] += 1;
+      return acc;
+    },
+    { critico: 0, alto: 0, vigilancia: 0 } as Record<Severity, number>,
+  );
+}
+
 export function BriefingView({
   briefing,
   actions,
@@ -25,12 +35,14 @@ export function BriefingView({
   briefing: Briefing;
   actions?: ReactNode;
 }) {
+  const counts = countBySeverity(briefing);
+
   async function copyText() {
     try {
       await navigator.clipboard.writeText(briefingToPlainText(briefing));
-      toast("Briefing copiado. Listo para el correo de las 06:30.");
+      toast.success("Briefing copiado. Listo para el correo de las 06:30.");
     } catch {
-      toast("No se pudo copiar. Prueba exportar.");
+      toast.error("No se pudo copiar. Prueba exportar.");
     }
   }
 
@@ -49,6 +61,26 @@ export function BriefingView({
           </p>
         </div>
         <div className="no-print flex flex-wrap gap-2">{actions}</div>
+      </div>
+
+      <div className="mt-8 grid grid-cols-3 gap-2 sm:max-w-md">
+        {(
+          [
+            ["critico", counts.critico],
+            ["alto", counts.alto],
+            ["vigilancia", counts.vigilancia],
+          ] as const
+        ).map(([key, n]) => (
+          <div
+            key={key}
+            className="rounded-md border border-border bg-card px-3 py-2.5"
+          >
+            <p className="kicker text-[0.65rem]">{SEVERITY_LABEL[key]}</p>
+            <p className="mt-1 font-display text-2xl tabular-nums leading-none">
+              {n}
+            </p>
+          </div>
+        ))}
       </div>
 
       <h1 className="mt-10 max-w-3xl font-display text-3xl leading-snug tracking-tight sm:text-4xl">
@@ -164,7 +196,13 @@ export function GenerateBar({
 }) {
   return (
     <Button
-      onClick={onGenerate}
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (generating) return;
+        onGenerate();
+      }}
       disabled={generating}
       className={cn("min-w-44", className)}
     >
