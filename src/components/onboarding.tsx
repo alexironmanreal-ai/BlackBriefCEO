@@ -16,8 +16,8 @@ export function Onboarding() {
       </h1>
       <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
         BlackBrief no resume el día. Resume el contexto de una empresa: activos,
-        personas, contratos, geografía. El briefing de las 06:30 solo existe si
-        hay un dossier.
+        personas, contratos, geografía. Cada ítem del briefing de las 06:30
+        tiene ancla en el dossier o no entra.
       </p>
       <div className="mt-10 flex flex-col gap-3 sm:flex-row">
         <Button
