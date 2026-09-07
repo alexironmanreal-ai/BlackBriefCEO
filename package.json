@@ -3,6 +3,8 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "version": "1.0.0",
+  "main": "electron/main.cjs",
   "overrides": {
     "nf3": "0.3.17"
   },
@@ -18,7 +20,10 @@
     "check:auth": "node scripts/check-auth-invariant.mjs",
     "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "electron": "electron .",
+    "dist:win": "npm run build && electron-builder --win --x64",
+    "dist:dir": "npm run build && electron-builder --dir"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",
@@ -80,6 +85,8 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
@@ -93,5 +100,30 @@
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.2.0"
+  },
+  "build": {
+    "appId": "com.blackbrief.ceo",
+    "productName": "BlackBriefCEO",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      ".output/**/*",
+      "electron/**/*",
+      "package.json",
+      "node_modules/**/*",
+      "migrations/**/*",
+      "public/**/*"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "BlackBriefCEO-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
   }
 }
