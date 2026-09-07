@@ -36,7 +36,15 @@ export const useBriefStore = create<BriefState>()(
       generating: false,
       generateError: null,
       setHydrated: (value) => set({ hydrated: value }),
-      setDossier: (dossier) => set({ dossier }),
+      setDossier: (dossier) => {
+        set({ dossier });
+        // Fire-and-forget DB mirror when signed in (best effort).
+        void import("@/lib/company-memory")
+          .then(({ saveCompanyDossier }) =>
+            saveCompanyDossier({ data: { dossier } }),
+          )
+          .catch(() => {});
+      },
       loadSample: () => {
         const date = todayKey();
         const briefing = stampSampleBriefing(date);
@@ -60,11 +68,19 @@ export const useBriefStore = create<BriefState>()(
           generateError: null,
         }),
       setActiveDate: (date) => set({ activeDate: date }),
-      saveBriefing: (briefing) =>
+      saveBriefing: (briefing) => {
         set({
           briefings: { ...get().briefings, [briefing.date]: briefing },
           activeDate: briefing.date,
-        }),
+        });
+        void import("@/lib/company-memory")
+          .then(({ saveCompanyBriefing }) =>
+            saveCompanyBriefing({
+              data: { briefing: briefing as unknown as Record<string, unknown> },
+            }),
+          )
+          .catch(() => {});
+      },
       setGenerating: (value) => set({ generating: value }),
       setGenerateError: (value) => set({ generateError: value }),
       todayBriefing: () => get().briefings[todayKey()],
