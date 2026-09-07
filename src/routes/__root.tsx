@@ -4,7 +4,7 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { Shell } from "@/components/shell";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "BlackBriefCEO";
+const APP_NAME = "BRIEF AI";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -20,6 +20,7 @@ export const Route = createRootRoute({
       { name: "theme-color", content: "#0b0b0a" },
     ],
     links: [
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "stylesheet", href: appCss },
       {
