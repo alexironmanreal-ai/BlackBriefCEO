@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBriefStore } from "@/lib/store";
@@ -19,7 +19,7 @@ export function Onboarding() {
         personas, contratos, geografía. Cada ítem del briefing de las 06:30
         tiene ancla en el dossier o no entra.
       </p>
-      <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button
           size="lg"
           onClick={() => {
@@ -41,11 +41,17 @@ export function Onboarding() {
           <FileText />
           Definir mi empresa
         </Button>
+        <Button size="lg" variant="ghost" asChild>
+          <Link to="/registro">Registrar cuenta empresa</Link>
+        </Button>
+        <Button size="lg" variant="ghost" asChild>
+          <Link to="/login">Ya tengo cuenta</Link>
+        </Button>
       </div>
       <p className="mt-8 max-w-md text-xs leading-relaxed text-muted-foreground">
         Helios es un dossier de referencia — generación renovable en Chile y
-        Perú, pre-IPO, un PPA que pesa el 18% del EBITDA. Sirve para entender el
-        producto antes de cargar el tuyo.
+        Perú, pre-IPO, un PPA que pesa el 18% del EBITDA. Con cuenta empresa el
+        dossier y el archivo viven en base de datos, no solo en el navegador.
       </p>
     </section>
   );
