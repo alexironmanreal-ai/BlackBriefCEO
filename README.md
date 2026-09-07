@@ -6,52 +6,45 @@ Cada mañana el CEO no necesita otro recorte de prensa. Necesita saber qué, de 
 
 ## Qué es
 
-BlackBriefCEO es un producto de inteligencia ejecutiva:
+1. **Dossier** — identidad, activos, personas, supply chain, exposiciones.
+2. **Briefing** — 4–6 amenazas mapeadas a anclas del dossier.
+3. **Archivo** — historial por fecha.
+4. **Cuenta empresa** — login/registro; memoria en base de datos por usuario.
 
-1. **Dossier** — identidad, teatro de operaciones, personas, activos críticos, cadena de suministro, exposiciones y prioridades del trimestre.
-2. **Briefing** — 4–6 amenazas mapeadas a anclas concretas del dossier (planta, PPA, CFO en roadshow, proveedor único…).
-3. **Archivo** — historial local de briefings por fecha.
-
-No resume titulares. Si una amenaza no puede anclarse al dossier, no entra.
-
-## Stack
-
-- TanStack Start + React 19 + Tailwind v4
-- Zustand (persistencia local del dossier y archivo)
-- xAI (`grok-4.5`) vía server function para generación en vivo
-- UI editorial oscura (Fraunces + IBM Plex Sans)
-
-## Arranque
+## Arranque (web)
 
 ```bash
 npm install
 npm run dev
 ```
 
-La app escucha en `0.0.0.0:8080`. Para generar briefings en vivo hace falta `XAI_API_KEY` en el entorno del servidor (inyectada por la plataforma en deploy; no va en `.env` del cliente).
+http://localhost:8080 — generación en vivo requiere `XAI_API_KEY` en el servidor.
 
-## Flujo de producto
+### Login de empresa
 
-| Paso | Acción |
-|------|--------|
-| 1 | Cargar el dossier de ejemplo (Helios Energía) o definir el propio |
-| 2 | Leer el briefing de referencia o generar el de la mañana |
-| 3 | Copiar / exportar para el correo de las 06:30 |
-| 4 | Refinar el dossier; el siguiente briefing mejora con más anclas |
+| Ruta | Uso |
+|------|-----|
+| `/registro` | Alta email + contraseña |
+| `/login` | Acceso y carga de memoria desde DB |
+| `/dossier` | Contexto del cliente |
+| `/archivo` | Histórico |
+
+Persistencia dual: **localStorage** (rápido, sobrevive F5) + **Postgres/PGLite** (espejo por `user_id` cuando hay sesión).
+
+## Instalador Windows (.exe)
+
+```bash
+npm install
+npm run dist:win
+```
+
+Salida: `release/BlackBriefCEO-Setup-*.exe` (NSIS, acceso directo en escritorio).
 
 ## Principios
 
-- **Ancla o fuera** — cada ítem cita un activo, persona, contrato o exposición real del dossier.
-- **Acción con dueño** — no hay “monitorear”; hay decisión y owner.
-- **Sin fuentes inventadas** — condiciones estructurales, no “Reuters dijo hoy…”.
-- **Datos en el dispositivo** — dossier y archivo en `localStorage` (`blackbrief-ceo`).
+- Ancla o fuera
+- Acción con dueño
+- Sin fuentes inventadas
+- Memoria de empresa, no solo del navegador
 
-## Rutas
-
-- `/` — briefing del día (o onboarding)
-- `/dossier` — editor del contexto del cliente
-- `/archivo` — histórico
-
-## Licencia
-
-Uso interno del proyecto. Created with Grok.
+Created with Grok.
