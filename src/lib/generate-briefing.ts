@@ -227,4 +227,3 @@ Devuelve SOLO JSON con esta forma:
       return { ok: false as const, error: message };
     }
   });
-}
