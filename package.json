@@ -3,7 +3,7 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "productName": "BRIEF AI",
   "main": "electron/main.cjs",
   "overrides": {
@@ -108,8 +108,7 @@
     "productName": "BRIEF AI",
     "copyright": "Copyright BRIEF AI",
     "directories": {
-      "output": "release",
-      "buildResources": "electron"
+      "output": "release"
     },
     "files": [
       "package.json",
@@ -118,10 +117,10 @@
       "dist/**/*",
       "public/**/*",
       "migrations/**/*",
+      "scripts/**/*",
       "node_modules/**/*",
       "!node_modules/.cache/**/*",
-      "!**/*.{md,ts,map}",
-      "!**/test/**/*"
+      "!release/**/*"
     ],
     "extraMetadata": {
       "main": "electron/main.cjs"
@@ -129,15 +128,17 @@
     "asar": true,
     "asarUnpack": [
       ".output/**/*",
-      "migrations/**/*"
+      "node_modules/**/*",
+      "migrations/**/*",
+      "scripts/**/*",
+      "public/**/*",
+      "dist/**/*"
     ],
     "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        }
-      ],
+      "target": [{
+        "target": "nsis",
+        "arch": ["x64"]
+      }],
       "artifactName": "BRIEF-AI-Setup-${version}.${ext}",
       "signAndEditExecutable": false
     },
@@ -148,7 +149,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "BRIEF AI",
-      "uninstallDisplayName": "BRIEF AI"
+      "uninstallDisplayName": "BRIEF AI",
+      "deleteAppDataOnUninstall": true
     }
   }
 }
