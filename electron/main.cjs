@@ -1,9 +1,9 @@
 /**
- * BRIEF AI desktop shell.
- * Prefer system Node to run the production server (packaged Electron+Nitro is fragile).
- * Falls back to ELECTRON_RUN_AS_NODE if node is not on PATH.
+ * BRIEF AI — desktop shell.
+ * Requires system Node.js. Starts production server (.output) or vite preview.
+ * Writes userData/BRIEF-AI/start.log for debugging.
  */
-const { app, BrowserWindow, dialog, shell } = require("electron");
+const { app, BrowserWindow, dialog } = require("electron");
 const { spawn, execSync } = require("node:child_process");
 const fs = require("node:fs");
 const http = require("node:http");
@@ -14,14 +14,35 @@ const HOST = "127.0.0.1";
 
 let serverProc = null;
 let mainWindow = null;
-let serverLog = "";
+let logPath = "";
+
+function log(line) {
+  const msg = "[" + new Date().toISOString() + "] " + line + "\n";
+  try {
+    if (!logPath) {
+      const dir = path.join(app.getPath("userData"), "BRIEF-AI");
+      fs.mkdirSync(dir, { recursive: true });
+      logPath = path.join(dir, "start.log");
+    }
+    fs.appendFileSync(logPath, msg);
+  } catch (_) {}
+  console.log(line);
+}
 
 function appRoot() {
-  if (app.isPackaged) return app.getAppPath();
+  if (app.isPackaged) {
+    if (process.resourcesPath) {
+      const unpacked = path.join(process.resourcesPath, "app.asar.unpacked");
+      if (fs.existsSync(unpacked)) return unpacked;
+      const resApp = path.join(process.resourcesPath, "app");
+      if (fs.existsSync(resApp)) return resApp;
+    }
+    return app.getAppPath();
+  }
   return path.join(__dirname, "..");
 }
 
-function findNodeBinary() {
+function findNode() {
   try {
     if (process.platform === "win32") {
       const out = execSync("where node", { encoding: "utf8" });
@@ -29,35 +50,24 @@ function findNodeBinary() {
       if (line && fs.existsSync(line)) return line;
     } else {
       const out = execSync("which node", { encoding: "utf8" }).trim();
-      if (out && fs.existsSync(out)) return out;
+      if (out) return out;
     }
   } catch (_) {}
   return null;
 }
 
-function resolveServerEntry(root) {
-  const candidates = [
+function resolveEntry(root) {
+  const list = [
     path.join(root, ".output", "server", "index.mjs"),
     path.join(root, ".output", "server", "index.js"),
   ];
-  if (app.isPackaged && process.resourcesPath) {
-    candidates.push(
-      path.join(process.resourcesPath, "app.asar.unpacked", ".output", "server", "index.mjs"),
-      path.join(process.resourcesPath, "app.asar.unpacked", ".output", "server", "index.js"),
-    );
-  }
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
+  for (const p of list) {
+    if (fs.existsSync(p)) return p;
   }
   return null;
 }
 
-function appendLog(line) {
-  serverLog += String(line);
-  if (serverLog.length > 12000) serverLog = serverLog.slice(-12000);
-}
-
-function waitForServer(url, attempts = 60, intervalMs = 500) {
+function waitForServer(url, attempts = 80) {
   return new Promise((resolve, reject) => {
     let left = attempts;
     const tick = () => {
@@ -68,140 +78,124 @@ function waitForServer(url, attempts = 60, intervalMs = 500) {
       req.setTimeout(2000);
       req.on("error", () => {
         left -= 1;
-        if (left <= 0) {
-          reject(
-            new Error(
-              "El servidor no respondió.\n\n" +
-                (serverLog.trim() || "(sin log)") +
-                "\n\nTip: instalá Node.js LTS y volvé a abrir BRIEF AI, o usá:\nnpm run dev",
-            ),
-          );
-        } else setTimeout(tick, intervalMs);
+        if (left <= 0) reject(new Error("Timeout esperando " + url));
+        else setTimeout(tick, 400);
       });
     };
     tick();
   });
 }
 
-function startServer(root) {
-  const entry = resolveServerEntry(root);
-  const nodeBin = findNodeBinary();
+function startServer(root, nodeBin) {
+  const entry = resolveEntry(root);
   const env = {
     ...process.env,
     PORT: String(PORT),
     NITRO_PORT: String(PORT),
     HOST,
     NODE_ENV: "production",
-    VITE_AUTH_ENABLED: process.env.VITE_AUTH_ENABLED || "true",
+    VITE_AUTH_ENABLED: "true",
   };
 
   if (entry && nodeBin) {
-    appendLog("using system node: " + nodeBin + "\nentry: " + entry + "\n");
+    log("start: node " + entry);
     serverProc = spawn(nodeBin, [entry], {
       cwd: root,
       env,
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
-  } else if (entry) {
-    appendLog("using ELECTRON_RUN_AS_NODE\nentry: " + entry + "\n");
-    serverProc = spawn(process.execPath, [entry], {
-      cwd: root,
-      env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true,
-    });
+  } else if (nodeBin) {
+    const viteJs = path.join(root, "node_modules", "vite", "bin", "vite.js");
+    if (fs.existsSync(viteJs)) {
+      log("start: vite preview via " + viteJs);
+      serverProc = spawn(
+        nodeBin,
+        [viteJs, "preview", "--host", HOST, "--port", String(PORT)],
+        { cwd: root, env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true },
+      );
+    } else {
+      log("start: npx vite preview");
+      serverProc = spawn(
+        process.platform === "win32" ? "npx.cmd" : "npx",
+        ["vite", "preview", "--host", HOST, "--port", String(PORT)],
+        {
+          cwd: root,
+          env,
+          stdio: ["ignore", "pipe", "pipe"],
+          shell: true,
+          windowsHide: true,
+        },
+      );
+    }
   } else {
-    const npx = process.platform === "win32" ? "npx.cmd" : "npx";
-    appendLog("fallback vite preview\n");
-    serverProc = spawn(
-      npx,
-      ["vite", "preview", "--host", HOST, "--port", String(PORT)],
-      {
-        cwd: root,
-        env,
-        stdio: ["ignore", "pipe", "pipe"],
-        shell: true,
-        windowsHide: true,
-      },
-    );
+    throw new Error("Node.js no encontrado");
   }
 
-  if (serverProc.stdout) serverProc.stdout.on("data", (d) => appendLog(d.toString()));
-  if (serverProc.stderr) serverProc.stderr.on("data", (d) => appendLog(d.toString()));
-  serverProc.on("error", (err) => appendLog("spawn error: " + err.message + "\n"));
-  serverProc.on("exit", (code) => appendLog("server exit=" + code + "\n"));
+  serverProc.stdout.on("data", (d) => log("out: " + d.toString().trim()));
+  serverProc.stderr.on("data", (d) => log("err: " + d.toString().trim()));
+  serverProc.on("exit", (c) => log("server exit " + c));
+  serverProc.on("error", (e) => log("spawn error " + e.message));
 }
 
-function loadingHtml(message) {
+function loadingHtml(html) {
   return (
     "data:text/html;charset=utf-8," +
     encodeURIComponent(
-      "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><style>" +
-        "body{margin:0;background:#0b0b0a;color:#eceae3;font-family:system-ui,sans-serif;" +
-        "display:flex;min-height:100vh;align-items:center;justify-content:center}" +
-        ".box{text-align:center;max-width:32rem;padding:2rem}" +
-        "h1{font-size:1.25rem;margin:0 0 .75rem}" +
-        "p{opacity:.75;line-height:1.5;margin:0;white-space:pre-wrap}</style></head>" +
-        "<body><div class=\"box\"><h1>BRIEF AI</h1><p>" +
-        message +
+      "<!DOCTYPE html><html><body style=\"margin:0;background:#0b0b0a;color:#eceae3;font-family:system-ui;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center;padding:2rem\"><div><h1>BRIEF AI</h1><p style=\"opacity:.8;max-width:28rem;line-height:1.5\">" +
+        html +
         "</p></div></body></html>",
     )
   );
 }
 
-function createWindow() {
+async function boot() {
+  const root = appRoot();
+  log("appRoot=" + root);
+  log("isPackaged=" + app.isPackaged);
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
-    minWidth: 900,
-    minHeight: 600,
     backgroundColor: "#0b0b0a",
     title: "BRIEF AI",
-    show: true,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
-  mainWindow.loadURL(loadingHtml("Iniciando…"));
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: "deny" };
-  });
-}
+  mainWindow.loadURL(loadingHtml("Iniciando motor local…"));
 
-async function boot() {
-  const root = appRoot();
-  createWindow();
+  const nodeBin = findNode();
+  log("node=" + (nodeBin || "MISSING"));
 
-  const nodeBin = findNodeBinary();
-  if (!nodeBin && app.isPackaged) {
+  if (!nodeBin) {
     const msg =
-      "No se encontró Node.js en el sistema.\n\n" +
-      "1) Instalá Node.js LTS desde https://nodejs.org\n" +
-      "2) Reiniciá la PC\n" +
-      "3) Abrí BRIEF AI de nuevo\n\n" +
-      "O en la carpeta del proyecto:\nnpm install\nnpm run dev";
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadURL(loadingHtml(msg.replace(/\n/g, "<br/>")));
-    }
-    dialog.showErrorBox("BRIEF AI", msg);
+      "No se encontró Node.js.<br/><br/>Instalá LTS desde nodejs.org, reiniciá Windows y volvé a abrir BRIEF AI.<br/><br/>Mientras tanto usá BRIEF-AI.bat en la carpeta del proyecto.";
+    mainWindow.loadURL(loadingHtml(msg));
+    dialog.showErrorBox(
+      "BRIEF AI",
+      "Falta Node.js.\n\n1) https://nodejs.org (LTS)\n2) Reiniciar PC\n3) Abrir BRIEF AI\n\nO usá BRIEF-AI.bat",
+    );
     return;
   }
 
-  startServer(root);
-  const url = "http://" + HOST + ":" + PORT + "/";
   try {
+    startServer(root, nodeBin);
+    const url = "http://" + HOST + ":" + PORT + "/";
     await waitForServer(url);
-    if (mainWindow && !mainWindow.isDestroyed()) await mainWindow.loadURL(url);
+    log("ready " + url);
+    await mainWindow.loadURL(url);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.loadURL(loadingHtml("No se pudo iniciar.\n\n" + detail));
-    }
-    dialog.showErrorBox("BRIEF AI — error", detail);
+    log("FAIL " + detail);
+    mainWindow.loadURL(
+      loadingHtml(
+        "No arrancó el servidor.<br/><br/>" +
+          detail +
+          "<br/><br/>Log: " +
+          (logPath || "(n/a)") +
+          "<br/><br/>Usá BRIEF-AI.bat o npm run dev",
+      ),
+    );
+    dialog.showErrorBox("BRIEF AI — error", detail + "\n\nLog: " + logPath);
   }
 }
 
@@ -210,23 +204,17 @@ function shutdown() {
   try {
     if (process.platform === "win32" && serverProc.pid) {
       spawn("taskkill", ["/pid", String(serverProc.pid), "/f", "/t"], { windowsHide: true });
-    } else {
-      serverProc.kill("SIGTERM");
-    }
+    } else serverProc.kill("SIGTERM");
   } catch (_) {}
   serverProc = null;
 }
 
 app.whenReady().then(() => {
   boot();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) boot();
-  });
 });
 
 app.on("window-all-closed", () => {
   shutdown();
   if (process.platform !== "darwin") app.quit();
 });
-
 app.on("before-quit", () => shutdown());
