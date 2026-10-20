@@ -36,7 +36,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl bg-card p-5 sm:p-7">
+    <section className="card-elevated p-5 sm:p-7">
       <p className="kicker">{kicker}</p>
       <h2 className="mt-2 font-display text-2xl tracking-tight">{title}</h2>
       <div className="mt-6 space-y-5">{children}</div>
@@ -94,9 +94,11 @@ export function DossierForm() {
             periodismo.
           </p>
         </div>
-        <p className="text-xs tabular-nums text-muted-foreground">
-          {score.filled}/{score.total} campos ancla
-        </p>
+        <div className="rounded-lg border border-border/70 bg-card px-4 py-2.5 text-xs tabular-nums text-muted-foreground">
+          <span className="font-medium text-foreground">{score.filled}</span>
+          <span className="mx-1 opacity-50">/</span>
+          {score.total} campos ancla
+        </div>
       </header>
 
       <Section kicker="01" title="Identidad">
@@ -216,11 +218,11 @@ export function DossierForm() {
       </Section>
 
       <Section kicker="04" title="Activos críticos">
-        <div className="space-y-6">
+        <div className="space-y-4">
           {dossier.assets.map((row, index) => (
             <div
               key={index}
-              className="space-y-3 rounded-md bg-background p-4"
+              className="space-y-3 rounded-lg border border-border/50 bg-background/80 p-4"
             >
               <div className="grid gap-2 sm:grid-cols-3">
                 <Input

@@ -18,6 +18,10 @@ function severityVariant(severity: Severity) {
   return severity;
 }
 
+function severityAccent(severity: Severity) {
+  return `severity-${severity}`;
+}
+
 function countBySeverity(briefing: Briefing) {
   return briefing.items.reduce(
     (acc, item) => {
@@ -53,7 +57,7 @@ export function BriefingView({
           <p className="kicker">
             Confidencial · uso interno · {briefing.source === "vivo" ? "generado" : "referencia"}
           </p>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm font-medium text-foreground/90">
             {briefing.companyName}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -63,33 +67,33 @@ export function BriefingView({
         <div className="no-print flex flex-wrap gap-2">{actions}</div>
       </div>
 
-      <div className="mt-8 grid grid-cols-3 gap-2 sm:max-w-md">
+      <div className="mt-8 grid grid-cols-3 gap-3 sm:max-w-md">
         {(
           [
-            ["critico", counts.critico],
-            ["alto", counts.alto],
-            ["vigilancia", counts.vigilancia],
+            ["critico", counts.critico, "text-destructive"],
+            ["alto", counts.alto, "text-high"],
+            ["vigilancia", counts.vigilancia, "text-watch"],
           ] as const
-        ).map(([key, n]) => (
+        ).map(([key, n, color]) => (
           <div
             key={key}
-            className="rounded-md border border-border bg-card px-3 py-2.5"
+            className="rounded-lg border border-border/80 bg-card px-3.5 py-3 shadow-sm"
           >
-            <p className="kicker text-[0.65rem]">{SEVERITY_LABEL[key]}</p>
-            <p className="mt-1 font-display text-2xl tabular-nums leading-none">
+            <p className="kicker text-[0.62rem]">{SEVERITY_LABEL[key]}</p>
+            <p className={cn("mt-1.5 font-display text-2xl tabular-nums leading-none", color)}>
               {n}
             </p>
           </div>
         ))}
       </div>
 
-      <h1 className="mt-10 max-w-3xl font-display text-3xl leading-snug tracking-tight sm:text-4xl">
+      <h1 className="mt-10 max-w-3xl font-display text-3xl leading-snug tracking-tight sm:text-[2.5rem]">
         {briefing.headline}
       </h1>
-      <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground">
+      <p className="mt-6 max-w-2xl text-[1.05rem] leading-relaxed text-muted-foreground">
         {briefing.situation}
       </p>
-      <p className="mt-4 text-xs tracking-wide text-muted-foreground">
+      <p className="mt-4 text-xs tracking-wide text-muted-foreground/90">
         {briefing.signalNote}
       </p>
 
@@ -101,14 +105,17 @@ export function BriefingView({
       </div>
       <Separator className="mt-3 bg-rule" />
 
-      <ol className="mt-2">
+      <ol className="mt-1">
         {briefing.items.map((item, index) => (
           <li
             key={item.id}
-            className="border-b border-border py-8 last:border-b-0"
+            className={cn(
+              "border-b border-border/70 py-8 pl-4 last:border-b-0",
+              severityAccent(item.severity),
+            )}
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-display text-lg tabular-nums text-muted-foreground">
+              <span className="font-display text-lg tabular-nums text-muted-foreground/80">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <Badge variant={severityVariant(item.severity)}>
@@ -124,18 +131,18 @@ export function BriefingView({
               Ancla · {item.dossierAnchor}
             </p>
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <div>
+              <div className="rounded-lg bg-muted/40 px-4 py-3.5">
                 <p className="kicker">Por qué te importa</p>
                 <p className="mt-2 text-sm leading-relaxed text-foreground/90">
                   {item.whyItMatters}
                 </p>
               </div>
-              <div>
+              <div className="rounded-lg bg-muted/40 px-4 py-3.5">
                 <p className="kicker">Acción</p>
                 <p className="mt-2 text-sm leading-relaxed text-foreground/90">
                   {item.action}
                 </p>
-                <p className="mt-3 text-xs text-muted-foreground">
+                <p className="mt-3 text-xs font-medium text-muted-foreground">
                   Owner · {item.owner}
                 </p>
               </div>
@@ -154,7 +161,7 @@ export function BriefingView({
                 key={item}
                 className="flex gap-3 text-sm leading-relaxed text-muted-foreground"
               >
-                <span className="mt-2 size-1 shrink-0 rounded-full bg-primary" />
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/80" />
                 <span>{item}</span>
               </li>
             ))}
@@ -162,9 +169,9 @@ export function BriefingView({
         </section>
       ) : null}
 
-      <section className="mt-12 rounded-xl bg-card p-5 sm:p-8">
+      <section className="card-elevated mt-12 p-6 sm:p-8">
         <h2 className="kicker">Para el CEO</h2>
-        <p className="mt-4 max-w-2xl font-display text-xl leading-snug tracking-tight">
+        <p className="mt-4 max-w-2xl font-display text-xl leading-snug tracking-tight text-foreground">
           {briefing.close}
         </p>
       </section>

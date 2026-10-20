@@ -58,7 +58,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-dvh items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Wordmark />
       </div>
     );
@@ -68,14 +68,14 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh">
-      <header className="no-print sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link to="/" className="min-h-11 min-w-11 content-center">
+      <header className="no-print sticky top-0 z-20 border-b border-border/80 bg-background/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+          <Link to="/" className="min-h-11 min-w-11 content-center transition-opacity hover:opacity-90">
             <Wordmark size="sm" />
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {dossier && !isAuthRoute ? (
-              <nav className="flex items-center gap-1 text-sm">
+              <nav className="flex items-center gap-0.5 text-sm">
                 {NAV.map((item) => {
                   const active =
                     item.to === "/"
@@ -85,9 +85,12 @@ export function Shell({ children }: { children: ReactNode }) {
                     <Link
                       key={item.to}
                       to={item.to}
+                      data-active={active}
                       className={cn(
-                        "flex h-11 items-center px-3 text-muted-foreground transition-colors duration-150",
-                        active && "text-foreground",
+                        "nav-link flex h-10 items-center rounded-md px-3.5 text-muted-foreground transition-colors duration-150",
+                        active
+                          ? "text-foreground"
+                          : "hover:bg-muted/60 hover:text-foreground/90",
                       )}
                     >
                       {item.label}
@@ -97,7 +100,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </nav>
             ) : null}
             {authEnabled && user ? (
-              <div className="flex items-center gap-2 border-l border-border pl-3">
+              <div className="ml-1 flex items-center gap-2 border-l border-border/80 pl-3">
                 <span className="hidden max-w-[10rem] truncate text-xs text-muted-foreground sm:inline">
                   {user.email ?? user.name}
                 </span>
@@ -112,7 +115,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
             ) : null}
             {authEnabled && !user && !isAuthRoute ? (
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="ml-1">
                 <Link to="/login">Entrar</Link>
               </Button>
             ) : null}
@@ -127,7 +130,7 @@ export function Shell({ children }: { children: ReactNode }) {
         position="bottom-center"
         toastOptions={{
           className:
-            "!bg-card !text-foreground !border-border !rounded-md !font-sans",
+            "!bg-card !text-foreground !border-border !rounded-lg !font-sans !shadow-lg",
         }}
       />
     </div>

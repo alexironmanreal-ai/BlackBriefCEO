@@ -4,15 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium transition-[opacity,transform,background-color,color,box-shadow] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:not-disabled:scale-[0.96]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[opacity,transform,background-color,color,box-shadow,border-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:not-disabled:scale-[0.97]",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:opacity-90",
+        default:
+          "bg-primary text-primary-foreground shadow-sm hover:opacity-92 hover:shadow-md",
         outline:
-          "border border-border bg-transparent text-foreground hover:bg-muted",
-        ghost: "text-foreground hover:bg-muted",
-        destructive: "bg-destructive text-foreground hover:opacity-90",
+          "border border-border/90 bg-transparent text-foreground hover:bg-muted/80 hover:border-border",
+        ghost: "text-foreground hover:bg-muted/70",
+        destructive:
+          "bg-destructive text-white shadow-sm hover:opacity-92",
       },
       size: {
         default: "h-11 px-4",
