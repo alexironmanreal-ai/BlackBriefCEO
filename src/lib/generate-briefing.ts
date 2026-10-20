@@ -51,6 +51,167 @@ const VECTORS = [
 ] as const;
 const HORIZONS = ["hoy", "7d", "30d"] as const;
 
+type LlmProvider = {
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  /** OpenAI-compatible chat completions vs Gemini generateContent */
+  style: "openai" | "gemini";
+};
+
+/**
+ * Resolve the first available LLM provider from env.
+ * Prefer free / generous tiers: Groq → Gemini → OpenRouter → xAI → OpenAI.
+ */
+function resolveProvider(): LlmProvider | null {
+  const groq = process.env.GROQ_API_KEY?.trim();
+  if (groq) {
+    return {
+      name: "groq",
+      baseUrl: "https://api.groq.com/openai/v1",
+      apiKey: groq,
+      model: process.env.LLM_MODEL?.trim() || "llama-3.3-70b-versatile",
+      style: "openai",
+    };
+  }
+
+  const gemini =
+    process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
+  if (gemini) {
+    return {
+      name: "gemini",
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+      apiKey: gemini,
+      model: process.env.LLM_MODEL?.trim() || "gemini-2.0-flash",
+      style: "gemini",
+    };
+  }
+
+  const openrouter = process.env.OPENROUTER_API_KEY?.trim();
+  if (openrouter) {
+    return {
+      name: "openrouter",
+      baseUrl: "https://openrouter.ai/api/v1",
+      apiKey: openrouter,
+      model:
+        process.env.LLM_MODEL?.trim() || "meta-llama/llama-3.3-70b-instruct:free",
+      style: "openai",
+    };
+  }
+
+  const xai = process.env.XAI_API_KEY?.trim();
+  if (xai) {
+    return {
+      name: "xai",
+      baseUrl: "https://api.x.ai/v1",
+      apiKey: xai,
+      model: process.env.LLM_MODEL?.trim() || "grok-4.5",
+      style: "openai",
+    };
+  }
+
+  const openai = process.env.OPENAI_API_KEY?.trim();
+  if (openai) {
+    return {
+      name: "openai",
+      baseUrl: "https://api.openai.com/v1",
+      apiKey: openai,
+      model: process.env.LLM_MODEL?.trim() || "gpt-4o-mini",
+      style: "openai",
+    };
+  }
+
+  return null;
+}
+
+async function callOpenAiStyle(
+  provider: LlmProvider,
+  system: string,
+  user: string,
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const res = await fetch(`${provider.baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${provider.apiKey}`,
+      ...(provider.name === "openrouter"
+        ? {
+            "HTTP-Referer": "https://github.com/alexironmanreal-ai/BlackBriefCEO",
+            "X-Title": "BlackBriefCEO",
+          }
+        : {}),
+    },
+    body: JSON.stringify({
+      model: provider.model,
+      temperature: 0.4,
+      max_tokens: 3200,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    return {
+      ok: false,
+      error: `No se pudo generar (${provider.name} ${res.status})${detail ? `: ${detail.slice(0, 180)}` : ""}.`,
+    };
+  }
+
+  const body = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+  const text = body.choices?.[0]?.message?.content ?? "";
+  if (!text) {
+    return { ok: false, error: "El modelo devolvió una respuesta vacía." };
+  }
+  return { ok: true, text };
+}
+
+async function callGemini(
+  provider: LlmProvider,
+  system: string,
+  user: string,
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const url = `${provider.baseUrl}/models/${provider.model}:generateContent?key=${encodeURIComponent(provider.apiKey)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: user }] }],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 3200,
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    return {
+      ok: false,
+      error: `No se pudo generar (gemini ${res.status})${detail ? `: ${detail.slice(0, 180)}` : ""}.`,
+    };
+  }
+
+  const body = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  const text =
+    body.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+    "";
+  if (!text) {
+    return { ok: false, error: "El modelo devolvió una respuesta vacía." };
+  }
+  return { ok: true, text };
+}
+
 function extractJson(text: string): unknown {
   const trimmed = text.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -128,9 +289,13 @@ function normalizeBriefing(
 export const generateBriefing = createServerFn({ method: "POST" })
   .validator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.XAI_API_KEY;
-    if (!apiKey) {
-      return { ok: false as const, error: "La generación no está disponible en este entorno." };
+    const provider = resolveProvider();
+    if (!provider) {
+      return {
+        ok: false as const,
+        error:
+          "La generación no está disponible. Configura una API key gratis en .env: GROQ_API_KEY, GEMINI_API_KEY, OPENROUTER_API_KEY, XAI_API_KEY u OPENAI_API_KEY.",
+      };
     }
 
     const company = data.dossier.companyName.trim();
@@ -185,38 +350,17 @@ Devuelve SOLO JSON con esta forma:
         : "No hay briefings previos.",
     ].join("\n");
 
-    const res = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "grok-4.5",
-        temperature: 0.4,
-        max_tokens: 3200,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    });
+    const result =
+      provider.style === "gemini"
+        ? await callGemini(provider, system, user)
+        : await callOpenAiStyle(provider, system, user);
 
-    if (!res.ok) {
-      return { ok: false as const, error: `No se pudo generar el briefing (${res.status}).` };
-    }
-
-    const body = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const text = body.choices?.[0]?.message?.content ?? "";
-    if (!text) {
-      return { ok: false as const, error: "El modelo devolvió una respuesta vacía." };
+    if (!result.ok) {
+      return { ok: false as const, error: result.error };
     }
 
     try {
-      const parsed = extractJson(text);
+      const parsed = extractJson(result.text);
       const briefing = normalizeBriefing(parsed, {
         date: data.date,
         companyName: company,

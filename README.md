@@ -18,7 +18,34 @@ npm install
 npm run dev
 ```
 
-http://localhost:8080 — generación en vivo requiere `XAI_API_KEY` en el servidor.
+http://localhost:8080
+
+### API key (generación en vivo)
+
+Pon **una** de estas variables en un archivo `.env` en la raíz del proyecto (gratis o de pago). Se usa la primera que encuentre:
+
+| Variable | Servicio | Gratis | Dónde sacar la key |
+|----------|----------|--------|--------------------|
+| `GROQ_API_KEY` | Groq | Sí (tier generoso) | https://console.groq.com |
+| `GEMINI_API_KEY` | Google Gemini | Sí | https://aistudio.google.com/apikey |
+| `OPENROUTER_API_KEY` | OpenRouter | Sí (modelos `:free`) | https://openrouter.ai/keys |
+| `XAI_API_KEY` | xAI (Grok) | Créditos | https://console.x.ai |
+| `OPENAI_API_KEY` | OpenAI | Créditos | https://platform.openai.com |
+
+Ejemplo mínimo (recomendado, gratis):
+
+```bash
+# .env
+GROQ_API_KEY=gsk_tu_clave_aqui
+```
+
+Opcional: forzar modelo con `LLM_MODEL=llama-3.3-70b-versatile` (o el que use tu proveedor).
+
+Reinicia el servidor después de crear/editar `.env`:
+
+```bash
+npm run dev
+```
 
 ### Login de empresa
 
